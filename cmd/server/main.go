@@ -29,8 +29,11 @@ func main() {
 		}
 	}(mqChan)
 
-	testString := "test this mf"
-	err = pubsub.PublishJSON(mqChan, routing.ExchangePerilDirect, routing.PauseKey, testString)
+	testMessage := routing.PlayingState{
+		IsPaused: true,
+	}
+
+	err = pubsub.PublishJSON(mqChan, routing.ExchangePerilDirect, routing.PauseKey, testMessage)
 	if err != nil {
 		log.Fatal("Failed to publish message", err)
 	}
