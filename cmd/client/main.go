@@ -7,8 +7,6 @@ import (
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
-	"os"
-	"os/signal"
 )
 
 func main() {
@@ -36,13 +34,39 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to get username", err)
 	}
+	gs := gamelogic.NewGameState(userName)
 
 	_, _, err = pubsub.DeclareAndBind(mqConn, routing.ExchangePerilDirect, "pause."+userName, routing.PauseKey, 0)
 	if err != nil {
 		return
 	}
 
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-	<-signalChan
+	for {
+		command := gamelogic.GetInput()
+		switch command[0] {
+		case "status":
+			gs.CommandStatus()
+		case "spawn":
+			err = gs.CommandSpawn(command)
+			if err != nil {
+				fmt.Println(err)
+			}
+		case "move":
+			_, err = gs.CommandMove(command)
+			if err != nil {
+				fmt.Println(err)
+			}
+		case "spam":
+			fmt.Println("Not supported yet")
+		case "help":
+			gamelogic.PrintClientHelp()
+		case "quit":
+			goto loopEnd
+		default:
+			fmt.Println("unknown command")
+		}
+	}
+loopEnd:
+	gamelogic.PrintQuit()
+
 }
