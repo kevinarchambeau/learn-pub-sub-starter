@@ -31,6 +31,11 @@ func main() {
 		}
 	}(mqChan)
 
+	_, _, err = pubsub.DeclareAndBind(mqConn, routing.ExchangePerilTopic, routing.GameLogSlug, "game_logs.*", 1)
+	if err != nil {
+		return
+	}
+
 	serverMessage := routing.PlayingState{
 		IsPaused: true,
 	}
