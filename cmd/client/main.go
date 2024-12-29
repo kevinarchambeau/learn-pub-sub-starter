@@ -35,6 +35,10 @@ func main() {
 		log.Fatal("Failed to get username", err)
 	}
 	gs := gamelogic.NewGameState(userName)
+	err = pubsub.SubscribeJSON(mqConn, routing.ExchangePerilDirect, "pause."+userName, routing.PauseKey, 0, handlerPause(gs))
+	if err != nil {
+		log.Fatal("failed to subscribe to queue", err)
+	}
 
 	_, _, err = pubsub.DeclareAndBind(mqConn, routing.ExchangePerilDirect, "pause."+userName, routing.PauseKey, 0)
 	if err != nil {
