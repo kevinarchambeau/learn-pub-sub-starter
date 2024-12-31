@@ -35,14 +35,26 @@ func main() {
 		log.Fatal("Failed to get username", err)
 	}
 	gs := gamelogic.NewGameState(userName)
-	err = pubsub.SubscribeJSON(mqConn, routing.ExchangePerilDirect, "pause."+userName, routing.PauseKey, 0, handlerPause(gs))
-	if err != nil {
-		log.Fatal("failed to subscribe to queue", err)
-	}
 
 	_, _, err = pubsub.DeclareAndBind(mqConn, routing.ExchangePerilDirect, "pause."+userName, routing.PauseKey, 0)
 	if err != nil {
 		return
+	}
+
+	_, _, err = pubsub.DeclareAndBind(mqConn, routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+userName, routing.ArmyMovesPrefix+".*", 0)
+	if err != nil {
+		return
+	}
+
+	// handle server pauses
+	err = pubsub.SubscribeJSON(mqConn, routing.ExchangePerilDirect, "pause."+userName, routing.PauseKey, 0, handlerPause(gs))
+	if err != nil {
+		log.Fatal("failed to subscribe to pause queue", err)
+	}
+	//handle other player moves
+	err = pubsub.SubscribeJSON(mqConn, routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+userName, routing.ArmyMovesPrefix+".*", 0, handlerMove(gs))
+	if err != nil {
+		log.Fatal("failed to subscribe to move queues", err)
 	}
 
 	for {
@@ -56,10 +68,16 @@ func main() {
 				fmt.Println(err)
 			}
 		case "move":
-			_, err = gs.CommandMove(command)
+			move, err := gs.CommandMove(command)
 			if err != nil {
 				fmt.Println(err)
 			}
+			err = pubsub.PublishJSON(mqChan, routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+userName, move)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println("move published")
+
 		case "spam":
 			fmt.Println("Not supported yet")
 		case "help":
