@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 )
@@ -38,9 +39,14 @@ func DeclareAndBind(
 		return nil, amqp.Queue{}, fmt.Errorf("failed to open a channel: %s", err)
 	}
 
+	tableSettings := amqp.Table{}
+	if exchange == routing.ExchangePerilTopic {
+		tableSettings["x-dead-letter-exchange"] = routing.PerilTopicDlq
+	}
+
 	isDurable := simpleQueueType == 1
 	isTransient := simpleQueueType == 0
-	queue, err := mqChan.QueueDeclare(queueName, isDurable, isTransient, isTransient, false, nil)
+	queue, err := mqChan.QueueDeclare(queueName, isDurable, isTransient, isTransient, false, tableSettings)
 	if err != nil {
 		return nil, amqp.Queue{}, fmt.Errorf("failed to create queue: %s", err)
 	}

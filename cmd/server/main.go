@@ -33,6 +33,8 @@ func main() {
 
 	_, _, err = pubsub.DeclareAndBind(mqConn, routing.ExchangePerilTopic, routing.GameLogSlug, "game_logs.*", 1)
 	if err != nil {
+		fmt.Println("Failed to declare and bind game log exchange")
+		fmt.Println(err)
 		return
 	}
 
@@ -67,16 +69,4 @@ func main() {
 loopEnd:
 	fmt.Println("Goodbye!")
 
-	//testMessage := routing.PlayingState{
-	//	IsPaused: true,
-	//}
-
-	//err = pubsub.PublishJSON(mqChan, routing.ExchangePerilDirect, routing.PauseKey, testMessage)
-	//if err != nil {
-	//	log.Fatal("Failed to publish message", err)
-	//}
-
-	//signalChan := make(chan os.Signal, 1)
-	//signal.Notify(signalChan, os.Interrupt)
-	//<-signalChan
 }
