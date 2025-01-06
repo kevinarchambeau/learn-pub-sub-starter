@@ -1,7 +1,9 @@
 package pubsub
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
@@ -13,6 +15,7 @@ func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error {
 	jsonString, err := json.Marshal(val)
 	if err != nil {
 		log.Printf("failed to marshal json: %s", err)
+		return err
 	}
 
 	err = ch.PublishWithContext(context.Background(), exchange, key, false, false,
@@ -22,7 +25,31 @@ func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error {
 		},
 	)
 	if err != nil {
-		log.Fatal("publish failed", err)
+		log.Printf("publish failed %s", err)
+		return err
+	}
+	return nil
+}
+
+func PublishGob[T any](ch *amqp.Channel, exchange, key string, val T) error {
+	var buffer bytes.Buffer
+
+	enc := gob.NewEncoder(&buffer)
+	err := enc.Encode(val)
+	if err != nil {
+		log.Printf("failed to encode message: %s", err)
+		return err
+	}
+
+	err = ch.PublishWithContext(context.Background(), exchange, key, false, false,
+		amqp.Publishing{
+			ContentType: "encoding/gob",
+			Body:        buffer.Bytes(),
+		},
+	)
+	if err != nil {
+		log.Printf("publish failed: %s", err)
+		return err
 	}
 	return nil
 }
