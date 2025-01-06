@@ -35,6 +35,7 @@ func main() {
 		log.Fatal("Failed to get username", err)
 	}
 	gs := gamelogic.NewGameState(userName)
+	gs.MqChan = mqChan
 
 	_, _, err = pubsub.DeclareAndBind(mqConn, routing.ExchangePerilDirect, "pause."+userName, routing.PauseKey, 0)
 	if err != nil {
@@ -54,7 +55,13 @@ func main() {
 	//handle other player moves
 	err = pubsub.SubscribeJSON(mqConn, routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+userName, routing.ArmyMovesPrefix+".*", 0, handlerMove(gs))
 	if err != nil {
-		log.Fatal("failed to subscribe to move queues", err)
+		log.Fatal("failed to subscribe to move queue", err)
+	}
+
+	// handle wars
+	err = pubsub.SubscribeJSON(mqConn, routing.ExchangePerilTopic, routing.WarRecognitionsPrefix, routing.WarRecognitionsPrefix+".*", 1, handlerWar(gs))
+	if err != nil {
+		log.Fatal("failed to subscribe to war queue", err)
 	}
 
 	for {

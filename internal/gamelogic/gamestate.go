@@ -1,6 +1,7 @@
 package gamelogic
 
 import (
+	amqp "github.com/rabbitmq/amqp091-go"
 	"sync"
 )
 
@@ -8,6 +9,7 @@ type GameState struct {
 	Player Player
 	Paused bool
 	mu     *sync.RWMutex
+	MqChan *amqp.Channel
 }
 
 func NewGameState(username string) *GameState {
@@ -18,6 +20,7 @@ func NewGameState(username string) *GameState {
 		},
 		Paused: false,
 		mu:     &sync.RWMutex{},
+		MqChan: nil,
 	}
 }
 
