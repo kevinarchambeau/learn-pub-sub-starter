@@ -97,6 +97,11 @@ func SubscribeJSON[T any](
 	if err != nil {
 		return err
 	}
+	err = mqChan.Qos(10, 0, false)
+	if err != nil {
+		return err
+	}
+
 	messages, err := mqChan.Consume(queue.Name, "", false, false, false, false, nil)
 	if err != nil {
 		return err
@@ -147,6 +152,11 @@ func SubscribeGob[T any](
 	if err != nil {
 		return err
 	}
+	err = mqChan.Qos(10, 0, false)
+	if err != nil {
+		return err
+	}
+
 	messages, err := mqChan.Consume(queue.Name, "", false, false, false, false, nil)
 	if err != nil {
 		return err
