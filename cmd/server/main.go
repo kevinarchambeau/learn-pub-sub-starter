@@ -38,6 +38,11 @@ func main() {
 		return
 	}
 
+	err = pubsub.SubscribeGob(mqConn, routing.ExchangePerilTopic, routing.GameLogSlug, "*", 1, handlerLogs())
+	if err != nil {
+		log.Fatal("failed to subscribe to logs queue", err)
+	}
+
 	serverMessage := routing.PlayingState{
 		IsPaused: true,
 	}

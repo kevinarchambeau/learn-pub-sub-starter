@@ -134,3 +134,51 @@ func SubscribeJSON[T any](
 
 	return nil
 }
+
+func SubscribeGob[T any](
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	simpleQueueType int,
+	handler func(T) string,
+) error {
+	mqChan, queue, err := DeclareAndBind(conn, exchange, queueName, key, simpleQueueType)
+	if err != nil {
+		return err
+	}
+	messages, err := mqChan.Consume(queue.Name, "", false, false, false, false, nil)
+	if err != nil {
+		return err
+	}
+	go func() {
+		err := func() error {
+			for message := range messages {
+				var val T
+				reader := bytes.NewReader(message.Body)
+				dec := gob.NewDecoder(reader)
+				err := dec.Decode(&val)
+				if err != nil {
+					return err
+				}
+				ackType := handler(val)
+				switch ackType {
+				case "Ack":
+					err = message.Ack(false)
+				case "NackDiscard":
+					err = message.Nack(false, false)
+				case "NackRequeue":
+					err = message.Nack(false, true)
+				}
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}()
+		if err != nil {
+		}
+	}()
+
+	return nil
+}
